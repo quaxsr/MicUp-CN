@@ -95,17 +95,6 @@ struct Lv2PluginInstance : public PluginInstance {
     void setParam(int32_t id, float value) override {
         if (id >= 0 && id < kMaxPorts && isControl[id]) {
             controlPorts[id] = value;
-            // Update the plugin's port connection with the new value
-            if (desc && lvInst && controlPorts[id] != prevControlPorts[id]) {
-                for (uint32_t portIdx = 0; portIdx < li->numPorts; portIdx++) {
-                    if (li->ports[portIdx] && li->ports[portIdx]->type == LV2_URID__Control &&
-                        (uint32_t)id == li->ports[portIdx]->index) {
-                        desc->connect_port(lvInst, portIdx, &controlPorts[id]);
-                        break;
-                    }
-                }
-                prevControlPorts[id] = controlPorts[id];
-            }
         }
     }
 

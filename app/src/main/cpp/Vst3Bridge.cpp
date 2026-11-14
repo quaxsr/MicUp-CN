@@ -201,21 +201,12 @@ std::string Vst3Bridge::getParams(const std::shared_ptr<PluginInstance>& inst) {
         auto& p = vi->params[i];
         if (i > 0) json += ",";
         // Get current parameter value from the plugin
-        float currentVal = 0.f;
-        if (vi->controller->getParamNormalized(p.id, &currentVal) == kResultOk) {
-            json += "{\"id\":"     + std::to_string(p.id)  + ",";
-            json += "\"name\":\""  + p.name                + "\",";
-            json += "\"min\":"     + std::to_string(p.min) + ",";
-            json += "\"max\":"     + std::to_string(p.max) + ",";
-            json += "\"value\":"    + std::to_string(currentVal) + "}";
-        } else {
-            // Fallback to default value if getParam fails
-            json += "{\"id\":"     + std::to_string(p.id)  + ",";
-            json += "\"name\":\""  + p.name                + "\",";
-            json += "\"min\":"     + std::to_string(p.min) + ",";
-            json += "\"max\":"     + std::to_string(p.max) + ",";
-            json += "\"value\":"    + std::to_string(p.def) + "}";
-        }
+        float currentVal = vi->controller->getParamNormalized(p.id);
+        json += "{\"id\":"     + std::to_string(p.id)  + ",";
+        json += "\"name\":\""  + p.name                + "\",";
+        json += "\"min\":"     + std::to_string(p.min) + ",";
+        json += "\"max\":"     + std::to_string(p.max) + ",";
+        json += "\"value\":"    + std::to_string(currentVal) + "}";
     }
     json += "]";
     return json;

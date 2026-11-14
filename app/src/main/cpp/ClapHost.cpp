@@ -86,7 +86,7 @@ struct ClapPluginInstance : public PluginInstance {
             ev.value        = (double)value;
             // Send the event to the plugin immediately
             if (plugin && paramsExt->flush) {
-                paramsExt->flush(plugin, nullptr, nullptr, 1, &ev.header);
+                paramsExt->flush(plugin, nullptr, 1);
             }
         }
     }
