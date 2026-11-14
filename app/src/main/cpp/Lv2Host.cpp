@@ -1,6 +1,9 @@
 #include "Lv2Host.h"
 #include "TtlParser.h"
 
+// Maximum samples per block to prevent buffer overflow
+static constexpr int kMaxSamplesPerBlock = 4096;
+
 #if __has_include(<lv2/core/lv2.h>)
 #  include <lv2/core/lv2.h>
 #  include <lv2/urid/urid.h>
@@ -74,6 +77,11 @@ struct Lv2PluginInstance : public PluginInstance {
 
     bool process(float* buf, int32_t frames, int32_t) override {
         if (!lvInst || !desc || !desc->run) return false;
+        // Validate buffer size to prevent overflow
+        if (frames < 0 || frames > kMaxSamplesPerBlock) {
+            LOGE("Invalid frames: %d (max: %d)", frames, kMaxSamplesPerBlock);
+            return false;
+        }
         std::memcpy(inputBuf, buf, frames * sizeof(float));
         if (audioIn  >= 0 && audioIn  < kMaxPorts)
             desc->connect_port(lvInst, audioIn,  inputBuf);
@@ -85,8 +93,20 @@ struct Lv2PluginInstance : public PluginInstance {
     }
 
     void setParam(int32_t id, float value) override {
-        if (id >= 0 && id < kMaxPorts && isControl[id])
+        if (id >= 0 && id < kMaxPorts && isControl[id]) {
             controlPorts[id] = value;
+            // Update the plugin's port connection with the new value
+            if (desc && lvInst && controlPorts[id] != prevControlPorts[id]) {
+                for (uint32_t portIdx = 0; portIdx < li->numPorts; portIdx++) {
+                    if (li->ports[portIdx] && li->ports[portIdx]->type == LV2_URID__Control &&
+                        (uint32_t)id == li->ports[portIdx]->index) {
+                        desc->connect_port(lvInst, portIdx, &controlPorts[id]);
+                        break;
+                    }
+                }
+                prevControlPorts[id] = controlPorts[id];
+            }
+        }
     }
 
     void cleanup() override {
@@ -190,7 +210,7 @@ std::string Lv2Host::getParams(const std::shared_ptr<PluginInstance>& inst) {
             json += "\"name\":\""  + escaped                       + "\",";
             json += "\"min\":"     + std::to_string(p.minimum)    + ",";
             json += "\"max\":"     + std::to_string(p.maximum)    + ",";
-            json += "\"default\":" + std::to_string(p.defaultVal) + "}";
+            json += "\"value\":"    + std::to_string(li->controlPorts[p.index]) + "}";
         }
     } else {
         for (int i = 2; i < li->kMaxPorts; i++) {
@@ -200,7 +220,7 @@ std::string Lv2Host::getParams(const std::shared_ptr<PluginInstance>& inst) {
             json += "{\"id\":"     + std::to_string(i) + ",";
             json += "\"name\":\"Control " + std::to_string(i - 1) + "\",";
             json += "\"min\":0.0,\"max\":1.0,";
-            json += "\"default\":" + std::to_string(li->controlPorts[i]) + "}";
+            json += "\"value\":"    + std::to_string(li->controlPorts[i]) + "}";
         }
     }
     json += "]";

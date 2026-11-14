@@ -84,6 +84,10 @@ struct ClapPluginInstance : public PluginInstance {
             ev.header.flags = CLAP_EVENT_IS_LIVE;
             ev.param_id     = (clap_id)id;
             ev.value        = (double)value;
+            // Send the event to the plugin immediately
+            if (plugin && paramsExt->flush) {
+                paramsExt->flush(plugin, nullptr, nullptr, 1, &ev.header);
+            }
         }
     }
 

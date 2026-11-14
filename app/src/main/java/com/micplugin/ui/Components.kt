@@ -31,7 +31,7 @@ fun VuMeterBar(
     isGainReduction: Boolean = false,
 ) {
     val animLevel by animateFloatAsState(
-        targetValue = levelDb.coerceIn(-60f, 0f),
+        targetValue = levelDb.coerceIn(0f, -60f),
         animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
         label = "vu",
     )
@@ -41,7 +41,10 @@ fun VuMeterBar(
     LaunchedEffect(levelDb) {
         if (levelDb > peakDb) { peakDb = levelDb; peakTimer = 0 }
         peakTimer++
-        if (peakTimer > 40) { peakDb -= 0.5f }
+        if (peakTimer > 40) {
+            peakTimer = 0  // 重置整数计数器
+            peakDb -= 0.5f
+        }
     }
 
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {

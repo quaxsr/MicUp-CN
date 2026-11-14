@@ -17,7 +17,11 @@ class PluginChain @Inject constructor() {
     }
 
     fun removePlugin(id: UUID) {
-        _slots.value = _slots.value
+        val currentSlots = _slots.value
+        // 先去重，确保不会有重复 ID
+        val uniqueSlots = currentSlots.distinctBy { it.id }
+        // 如果没有重复，直接过滤；如果有重复，过滤所有相同 ID 的插件
+        _slots.value = uniqueSlots
             .filter { it.id != id }
             .mapIndexed { i, s -> s.copy(position = i) }
     }

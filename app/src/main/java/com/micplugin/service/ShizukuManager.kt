@@ -2,6 +2,8 @@ package com.micplugin.service
 
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -70,8 +72,16 @@ class ShizukuManager @Inject constructor() {
     /** Call from Activity to trigger the Shizuku permission dialog */
     fun requestPermission() {
         try {
-            if (_state.value == ShizukuState.NEED_GRANT)
+            if (_state.value == ShizukuState.NEED_GRANT) {
                 Shizuku.requestPermission(REQUEST_CODE)
+                // 添加超时检测，30秒后如果仍未授权，提示用户
+                Handler(Looper.getMainLooper()).postDelayed({
+                    if (_state.value == ShizukuState.NEED_GRANT) {
+                        Log.w(TAG, "Shizuku permission request timed out after 30s")
+                        // 可以在这里添加通知或提示用户
+                    }
+                }, 30000)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "requestPermission failed: $e")
         }

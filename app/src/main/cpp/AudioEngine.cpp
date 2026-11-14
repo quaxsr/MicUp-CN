@@ -342,16 +342,25 @@ void AudioEngine::dsp_noiseGate(float* buf, int32_t frames) {
     float releaseCoef= 1.0f - std::exp(-1.0f / (params_.gateReleaseMs.load(std::memory_order_relaxed)
                         * 0.001f * sampleRate_));
 
-    for (int i = 0; i < frames; i++) {
+    // Process in blocks for better performance
+    for (int block = 0; block < frames; block += kGrainSize) {
+        int blockFrames = std::min(kGrainSize, frames - block);
+
         // RMS with single-pole smoothing
-        float x2 = buf[i] * buf[i];
-        gateRms_ = gateRms_ * 0.995f + x2 * 0.005f;
+        for (int i = 0; i < blockFrames; i++) {
+            float x2 = buf[block + i] * buf[block + i];
+            gateRms_ = gateRms_ * 0.995f + x2 * 0.005f;
+        }
         float rms = std::sqrt(gateRms_);
 
         float target = (rms > threshLin) ? 1.0f : 0.0f;
         float coef   = (target > gateEnv_) ? attackCoef : releaseCoef;
         gateEnv_    += coef * (target - gateEnv_);
-        buf[i]      *= gateEnv_;
+
+        // Apply gain reduction to all samples in block
+        for (int i = 0; i < blockFrames; i++) {
+            buf[block + i] *= gateEnv_;
+        }
     }
 }
 
@@ -383,19 +392,24 @@ void AudioEngine::dsp_compressor(float* buf, int32_t frames) {
         compEnv_ = compEnv_ * (1.0f - attackCoef) + (buf[i]*buf[i]) * attackCoef;
         float levelDb = linTodB(std::sqrt(compEnv_) + 1e-10f);
 
-        // Soft-knee gain computation
+        // Soft-knee gain computation (standard formula)
         float grDb = 0.0f;
         float over = levelDb - threshold;
-        if (over > kKneeWidth * 0.5f) {
-            grDb = (over) * (1.0f - 1.0f/ratio);
-        } else if (over > -kKneeWidth * 0.5f) {
-            float t = (over + kKneeWidth * 0.5f) / kKneeWidth;
-            grDb = t * t * (over) * (1.0f - 1.0f/ratio);
+        if (over <= threshold - kKneeWidth * 0.5f) {
+            grDb = 0.0f; // Below soft-knee start, no compression
+        } else if (over >= threshold + kKneeWidth * 0.5f) {
+            grDb = (over - threshold) * (1.0f - 1.0f/ratio); // Hard knee region
+        } else {
+            // Soft-knee region: smooth transition using quadratic curve
+            float t = (over - threshold + kKneeWidth * 0.5f) / kKneeWidth;
+            grDb = t * t * (1.0f - 1.0f/ratio); // Quadratic curve
         }
-        float targetGain = dBToLin(-grDb) * makeup;
+        float targetGain = dBToLin(threshold - levelDb) * makeup;
 
         // Smooth gain application
-        float coef = (targetGain < 1.0f) ? attackCoef : releaseCoef;
+        // Use attack coefficient when signal exceeds threshold (need to reduce gain),
+        // use release coefficient when signal is below threshold (need to return to unity)
+        float coef = (levelDb > threshold) ? attackCoef : releaseCoef;
         compGainReduction_ += coef * (targetGain - compGainReduction_);
         buf[i] *= compGainReduction_;
         totalGR += grDb;
@@ -423,28 +437,42 @@ void AudioEngine::dsp_reverb(float* buf, int32_t frames) {
     }
 }
 
-// ─── Granular Pitch Shifter (OLA / time-stretch) ─────────────────────────────
+// ─── Granular Pitch Shifter (OLA / time-stretch) with block-based processing ─────────────────────────────
 void AudioEngine::dsp_pitchShift(float* buf, int32_t frames) {
     float semitones = params_.pitchSemitones.load(std::memory_order_relaxed);
     float rate      = std::pow(2.0f, semitones / 12.0f); // playback rate
+    const int kBufSize = kGrainSize * 2;
 
-    for (int i = 0; i < frames; i++) {
-        // Write input
-        pitchIn_[pitchWritePos_ % (kGrainSize*2)] = buf[i];
-        pitchWritePos_++;
+    // Process in blocks for better performance
+    for (int block = 0; block < frames; block += kGrainSize) {
+        int blockFrames = std::min(kGrainSize, frames - block);
+
+        // Write input for this block
+        for (int i = 0; i < blockFrames; i++) {
+            pitchIn_[(pitchWritePos_ + i) % kBufSize] = buf[block + i];
+        }
+        pitchWritePos_ += blockFrames;
 
         // Read at variable rate (linear interpolation)
-        int   ri   = (int)pitchReadFrac_;
-        float frac = pitchReadFrac_ - ri;
-        int   i0   = ri % (kGrainSize*2);
-        int   i1   = (ri+1) % (kGrainSize*2);
-        buf[i]      = pitchIn_[i0] * (1.0f - frac) + pitchIn_[i1] * frac;
+        float readPos = fmod(pitchReadFrac_, kBufSize);
+        for (int i = 0; i < blockFrames; i++) {
+            int   ri      = (int)readPos;
+            float frac    = readPos - ri;
+            int   i0      = ri % kBufSize;
+            int   i1      = ((ri + 1) % kBufSize);
+            buf[block + i] = pitchIn_[i0] * (1.0f - frac) + pitchIn_[i1] * frac;
 
-        pitchReadFrac_ += rate;
+            readPos += rate;
+        }
+        pitchReadFrac_ += rate * blockFrames;
+
         // Keep read pointer within 1 grain of write (latency = 1 grain)
         float lag = pitchWritePos_ - pitchReadFrac_;
-        if (lag > kGrainSize*2 - 1) pitchReadFrac_ = pitchWritePos_ - kGrainSize;
-        if (lag < 1)               pitchReadFrac_ = pitchWritePos_ - kGrainSize;
+        if (lag > kBufSize - 1) {
+            pitchReadFrac_ = pitchWritePos_ - kGrainSize;
+        } else if (lag < 1.0f) {
+            pitchReadFrac_ = pitchWritePos_ - kGrainSize;
+        }
     }
 }
 

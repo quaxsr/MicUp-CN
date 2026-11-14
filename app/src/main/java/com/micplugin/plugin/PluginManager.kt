@@ -27,11 +27,20 @@ class PluginManager @Inject constructor(
     val discovered: StateFlow<List<PluginDescriptor>> = _discovered
 
     suspend fun scanAll() = withContext(Dispatchers.IO) {
-        val results = mutableListOf<PluginDescriptor>()
-        results += scanLv2()
-        results += scanClap()
-        results += scanVst3()
-        results += scanApkPlugins()
+        // 并发扫描所有格式，提高性能
+        val results = kotlinx.coroutines.coroutineScope {
+            val lv2Deferred = async { scanLv2() }
+            val clapDeferred = async { scanClap() }
+            val vst3Deferred = async { scanVst3() }
+            val apkDeferred = async { scanApkPlugins() }
+
+            mutableListOf<PluginDescriptor>().apply {
+                addAll(lv2Deferred.await())
+                addAll(clapDeferred.await())
+                addAll(vst3Deferred.await())
+                addAll(apkDeferred.await())
+            }
+        }
         _discovered.value = results
         Log.i(TAG, "Scan complete: ${results.size} plugins found")
         Log.i(TAG, "LV2 paths:  ${pathPrefs.allPaths(context, PluginFormat.LV2).map { it.absolutePath }}")

@@ -8,6 +8,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.io.FileChannel
+import java.nio.channels.FileChannel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -54,7 +56,8 @@ object CrashReporter {
             FileOutputStream(file).use { fos ->
                 fos.write(text.toByteArray(Charsets.UTF_8))
                 fos.flush()
-                fos.fd.sync()
+                // 使用 FileChannel.force() 确保数据写入磁盘
+                fos.channel.use { it.force(true) }
             }
             file
         } catch (_: Throwable) { null }

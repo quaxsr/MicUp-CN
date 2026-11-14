@@ -2,6 +2,7 @@ package com.micplugin.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.micplugin.audio.AudioEngine
 import com.micplugin.audio.AudioLevels
 import com.micplugin.plugin.*
@@ -220,9 +221,16 @@ class AudioViewModel @Inject constructor(
 
     fun setPluginParam(slotId: UUID, paramId: Int, value: Float) {
         val slot = audioEngine.pluginChain.getSlot(slotId) ?: return
-        if (slot.nativeHandle != 0L)
-            audioEngine.setNativePluginParam(slot.nativeHandle, paramId, value)
-        audioEngine.pluginChain.updateParam(slotId, paramId, value)
+        if (slot.nativeHandle != 0L) {
+            val success = audioEngine.setNativePluginParam(slot.nativeHandle, paramId, value)
+            if (success) {
+                audioEngine.pluginChain.updateParam(slotId, paramId, value)
+            } else {
+                Log.e("AudioViewModel", "Failed to set plugin param for slot $slotId: $paramId = $value")
+            }
+        } else {
+            audioEngine.pluginChain.updateParam(slotId, paramId, value)
+        }
     }
 
     // ── Presets ───────────────────────────────────────────────────────────────
@@ -327,21 +335,28 @@ class AudioViewModel @Inject constructor(
     private val _selectedOutputDeviceId = MutableStateFlow(-1)
     val selectedOutputDeviceId: kotlinx.coroutines.flow.StateFlow<Int> = _selectedOutputDeviceId
 
-    fun loadOutputDevices(context: android.content.Context) {
+    fun loadOutputDevices(context: android.content.Context): Boolean {
         _outputDevices.value = SoftwareLoopback.getOutputDevices(context)
         // Restore saved selection
         val saved = context.getSharedPreferences("micup_prefs", android.content.Context.MODE_PRIVATE)
             .getInt("output_device_id", -1)
         _selectedOutputDeviceId.value = saved
-        SoftwareLoopback.setOutputDevice(context, saved)
+        return SoftwareLoopback.setOutputDevice(context, saved)
     }
 
     fun setOutputDevice(context: android.content.Context, deviceId: Int) {
-        _selectedOutputDeviceId.value = deviceId
-        SoftwareLoopback.setOutputDevice(context, deviceId)
-        // Persist selection
-        context.getSharedPreferences("micup_prefs", android.content.Context.MODE_PRIVATE)
-            .edit().putInt("output_device_id", deviceId).apply()
+        // 先更新内部状态
+        selectedOutputDeviceId.value = deviceId
+        // 调用 SoftwareLoopback 设置设备
+        val success = SoftwareLoopback.setOutputDevice(context, deviceId)
+        // 只有成功才持久化
+        if (success) {
+            context.getSharedPreferences("micup_prefs", android.content.Context.MODE_PRIVATE)
+                .edit().putInt("output_device_id", deviceId).apply()
+        } else {
+            // 失败时恢复 UI 状态
+            selectedOutputDeviceId.value = -1
+        }
     }
 
     // ── Input device (fixes #5 — external sound cards were stuck on the built-in mic) ──

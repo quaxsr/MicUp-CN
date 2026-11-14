@@ -22,6 +22,7 @@ object SoftwareLoopback {
     private var monitorEnabled:   Boolean    = true
     private var running = false
     private var focusRequest: AudioFocusRequest? = null
+    private var focusListener: AudioManager.OnAudioFocusChangeListener? = null
 
     // Lock-free float queue — audio callback offers, worker thread drains
     private val queue = ArrayBlockingQueue<FloatArray>(QUEUE_CAP)
@@ -161,10 +162,11 @@ object SoftwareLoopback {
         return list
     }
 
-    fun setOutputDevice(context: Context, deviceId: Int) {
+    fun setOutputDevice(context: Context, deviceId: Int): Boolean {
         selectedDeviceId = deviceId
         audioManager = audioManager ?: context.getSystemService(AudioManager::class.java)
         applyOutputDevice()
+        return true  // 目前总是返回 true，因为 applyOutputDevice 内部有 try-catch
     }
 
     // ── Input device enumeration (fixes #5 — external sound cards had no way to
@@ -213,7 +215,7 @@ object SoftwareLoopback {
 
     private fun requestAudioFocus() {
         val am = audioManager ?: return
-        val listener = AudioManager.OnAudioFocusChangeListener { change ->
+        focusListener = AudioManager.OnAudioFocusChangeListener { change ->
             when (change) {
                 AudioManager.AUDIOFOCUS_LOSS,
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT          -> monitorTrack?.setVolume(0f)
@@ -226,12 +228,12 @@ object SoftwareLoopback {
                 .setAudioAttributes(AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH).build())
-                .setOnAudioFocusChangeListener(listener)
+                .setOnAudioFocusChangeListener(focusListener)
                 .setWillPauseWhenDucked(false).build()
             am.requestAudioFocus(focusRequest!!)
         } else {
             @Suppress("DEPRECATION")
-            am.requestAudioFocus(listener, AudioManager.STREAM_MUSIC,
+            am.requestAudioFocus(focusListener, AudioManager.STREAM_MUSIC,
                 AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
         }
     }
@@ -242,6 +244,29 @@ object SoftwareLoopback {
                 focusRequest?.let { audioManager?.abandonAudioFocusRequest(it) }
             else @Suppress("DEPRECATION") audioManager?.abandonAudioFocus(null)
         } catch (_: Exception) {}
+    }
+
+    // ── Audio focus auto-recovery ────────────────────────────────────────────────
+    private fun setupAudioFocusRecovery() {
+        // 监听音频焦点变化，如果失去焦点，延迟后尝试重新获取
+        focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+            when (change) {
+                AudioManager.AUDIOFOCUS_LOSS,
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT          -> {
+                    monitorTrack?.setVolume(0f)
+                    // 1秒后尝试重新获取焦点
+                    android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        if (running && monitorEnabled) requestAudioFocus()
+                    }, 1000)
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                    monitorTrack?.setVolume(0.2f)
+                }
+                AudioManager.AUDIOFOCUS_GAIN                    -> {
+                    monitorTrack?.setVolume(if (monitorEnabled) 1f else 0f)
+                }
+            }
+        }
     }
 
     private fun buildMonitorTrack(bufSize: Int): AudioTrack? = try {

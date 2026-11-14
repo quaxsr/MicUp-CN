@@ -217,10 +217,8 @@ fun SettingsScreen(navController: NavController, vm: AudioViewModel = hiltViewMo
                 // 主题模式
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     Text("主题模式", fontSize = 11.sp, color = StudioColors.TextMuted)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+                    // 纵向排列：每张选项卡占满一行，避免横向 weight 挤压
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         ThemeModeOption(
                             isSelected = themeMode == ThemeMode.SYSTEM,
                             icon = Icons.Default.BrightnessAuto,
@@ -248,10 +246,7 @@ fun SettingsScreen(navController: NavController, vm: AudioViewModel = hiltViewMo
                 // 界面材质
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(top = 8.dp)) {
                     Text("界面材质", fontSize = 11.sp, color = StudioColors.TextMuted)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         MaterialStyleOption(
                             isSelected = materialStyle == MaterialStyle.GLASS,
                             icon = Icons.Default.BlurOn,
@@ -432,9 +427,11 @@ private fun ThemeModeOption(
         border = if (isSelected) {
             BorderStroke(1.dp, StudioColors.Accent)
         } else {
-            BorderStroke(0.5.dp, StudioColors.Border)
+            BorderStroke(1.dp, StudioColors.Border)
         },
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
     ) {
         Row(
             Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
@@ -467,9 +464,11 @@ private fun MaterialStyleOption(
         border = if (isSelected) {
             BorderStroke(1.dp, StudioColors.Accent)
         } else {
-            BorderStroke(0.5.dp, StudioColors.Border)
+            BorderStroke(1.dp, StudioColors.Border)
         },
-        modifier = Modifier.clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
     ) {
         Row(
             Modifier.padding(horizontal = 12.dp, vertical = 10.dp),

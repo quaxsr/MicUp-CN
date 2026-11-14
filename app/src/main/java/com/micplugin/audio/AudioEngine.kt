@@ -113,7 +113,7 @@ class AudioEngine @Inject constructor(
     fun setNativePluginParam(handle: Long, paramId: Int, value: Float) =
         oboe.setPluginParam(handle, paramId, value)
 
-    // ── Meter polling (50ms cadence, off audio thread) ────────────────────────
+    // ── Meter polling (100ms cadence, off audio thread) ────────────────────────
     private fun startMeterPolling() {
         meterJob = scope.launch {
             while (isActive) {
@@ -123,7 +123,7 @@ class AudioEngine @Inject constructor(
                     outputDb       = raw.getOrElse(1) { -100f },
                     gainReductionDb = raw.getOrElse(2) { 0f },
                 )
-                delay(50)
+                delay(100)  // 降低到 100ms (10fps)
             }
         }
     }

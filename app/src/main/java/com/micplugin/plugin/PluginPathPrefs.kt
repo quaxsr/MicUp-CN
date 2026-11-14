@@ -51,12 +51,27 @@ class PluginPathPrefs @Inject constructor() {
     fun addPath(context: Context, format: PluginFormat, path: String) {
         val trimmed = path.trim().trimEnd('/')
         when (format) {
-            PluginFormat.LV2  -> _lv2Paths.value  = (_lv2Paths.value  + trimmed).distinct()
-            PluginFormat.CLAP -> _clapPaths.value = (_clapPaths.value + trimmed).distinct()
-            PluginFormat.VST3 -> _vst3Paths.value = (_vst3Paths.value + trimmed).distinct()
+            PluginFormat.LV2  -> {
+                // 先检查是否已存在
+                if (!_lv2Paths.value.contains(trimmed)) {
+                    _lv2Paths.value = _lv2Paths.value + trimmed
+                    save(context)
+                }
+            }
+            PluginFormat.CLAP -> {
+                if (!_clapPaths.value.contains(trimmed)) {
+                    _clapPaths.value = _clapPaths.value + trimmed
+                    save(context)
+                }
+            }
+            PluginFormat.VST3 -> {
+                if (!_vst3Paths.value.contains(trimmed)) {
+                    _vst3Paths.value = _vst3Paths.value + trimmed
+                    save(context)
+                }
+            }
             else -> return
         }
-        save(context)
     }
 
     fun removePath(context: Context, format: PluginFormat, path: String) {

@@ -8,6 +8,9 @@ import android.os.Build
 import android.os.Environment
 import android.os.PowerManager
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import android.provider.Settings
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -119,7 +122,7 @@ class MainActivity : ComponentActivity() {
         val uri = intent?.data ?: return
         if (intent.action != android.content.Intent.ACTION_VIEW) return
         val activity = this
-        kotlinx.coroutines.GlobalScope.launch(Dispatchers.Main) {
+        viewModelScope.launch(Dispatchers.Main) {
             val result = withContext(Dispatchers.IO) {
                 PluginImporter.importFromUri(activity, uri)
             }
