@@ -62,12 +62,21 @@ jobs:
           ANDROID_NDK_HOME: ${{ env.ANDROID_SDK_ROOT }}/ndk/26.3.11579264
         run: |
           ./gradlew assembleDebug --no-daemon
+
       - name: Rename APK
         run: |
           TAG=${{ github.event.inputs.tag || github.ref_name }}
           echo "RELEASE_TAG=${TAG}" >> $GITHUB_ENV
           mv app/build/outputs/apk/debug/app-debug.apk \
              app/build/outputs/apk/debug/MicUp-${TAG}.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MicUp-APK
+          path: app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+          if-no-files-found: error
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -76,7 +85,7 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG || github.ref_name }}
           body: ''
           files: app/build/outputs/apk/debug/MicUp-*.apk
-          draft: true
+          draft: false
           prerelease: ${{ contains(env.RELEASE_TAG || github.ref_name, '-beta') || contains(env.RELEASE_TAG || github.ref_name, '-alpha') }}
 
       - name: Upload Build Logs on Failure
