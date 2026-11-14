@@ -76,8 +76,13 @@ class MainActivity : ComponentActivity() {
         // Handle file opened from file manager
         handleIncomingPlugin(intent)
         requestAllFilesPermission()
+        // 恢复上次保存的主题与材质选择（SharedPreferences，同步读取，文件极小）
+        ThemeState.load(applicationContext)
         setContent {
-            MicPluginTheme {
+            MicPluginTheme(
+                themeMode = ThemeState.themeMode,
+                materialStyle = ThemeState.materialStyle,
+            ) {
                 val navController = rememberNavController()
                 Scaffold(containerColor = StudioColors.Background) { padding ->
                     Box(
@@ -123,13 +128,13 @@ class MainActivity : ComponentActivity() {
                 vm.rescan()
                 android.widget.Toast.makeText(
                     activity,
-                    "Plugin imported: ${result.pluginDescriptor?.name}",
+                    "插件已导入：${result.pluginDescriptor?.name}",
                     android.widget.Toast.LENGTH_SHORT
                 ).show()
             } else {
                 android.widget.Toast.makeText(
                     activity,
-                    "Import failed: ${result.error}",
+                    "导入失败：${result.error}",
                     android.widget.Toast.LENGTH_LONG
                 ).show()
             }

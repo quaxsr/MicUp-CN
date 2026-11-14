@@ -56,7 +56,7 @@ class PresetManager @Inject constructor(
         private const val TAG = "PresetManager"
         val BUILT_IN: List<Preset> = listOf(
             Preset(
-                name = "Clean Pass-Through",
+                name = "纯净直通",
                 isBuiltIn = true,
                 effects = EffectState(
                     gateEnabled  = false,
@@ -67,7 +67,7 @@ class PresetManager @Inject constructor(
                 ),
             ),
             Preset(
-                name = "Podcast Voice",
+                name = "播客音色",
                 isBuiltIn = true,
                 effects = EffectState(
                     gateThreshold = -45f,
@@ -79,7 +79,7 @@ class PresetManager @Inject constructor(
                 ),
             ),
             Preset(
-                name = "Deep Radio Voice",
+                name = "低沉电台音色",
                 isBuiltIn = true,
                 effects = EffectState(
                     pitchEnabled   = true,
@@ -90,7 +90,7 @@ class PresetManager @Inject constructor(
                 ),
             ),
             Preset(
-                name = "Telephone Effect",
+                name = "电话音效",
                 isBuiltIn = true,
                 effects = EffectState(
                     // Bandpass 300Hz–3.4kHz: cut lows + highs
@@ -102,7 +102,7 @@ class PresetManager @Inject constructor(
                 ),
             ),
             Preset(
-                name = "Studio Vocal",
+                name = "录音室人声",
                 isBuiltIn = true,
                 effects = EffectState(
                     gateThreshold = -40f,

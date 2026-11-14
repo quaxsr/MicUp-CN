@@ -40,16 +40,16 @@ fun PluginPathsScreen(navController: NavController, vm: AudioViewModel = hiltVie
         Surface(color = StudioColors.Surface, modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, "Back", tint = StudioColors.TextPrimary)
+                    Icon(Icons.Default.ArrowBack, "返回", tint = StudioColors.TextPrimary)
                 }
                 Column(Modifier.weight(1f)) {
-                    Text("PLUGIN PATHS", style = MaterialTheme.typography.titleMedium,
+                    Text("插件路径", style = MaterialTheme.typography.titleMedium,
                         color = StudioColors.TextPrimary, letterSpacing = 2.sp)
-                    Text("Add folders where plugin files (.so / .clap / .lv2) live",
+                    Text("添加插件文件（.so / .clap / .lv2）所在的文件夹",
                         fontSize = 10.sp, color = StudioColors.TextMuted)
                 }
                 IconButton(onClick = { vm.rescan() }) {
-                    Icon(Icons.Default.Refresh, "Rescan", tint = StudioColors.Accent)
+                    Icon(Icons.Default.Refresh, "重新扫描", tint = StudioColors.Accent)
                 }
             }
         }
@@ -62,13 +62,13 @@ fun PluginPathsScreen(navController: NavController, vm: AudioViewModel = hiltVie
             border   = BorderStroke(0.5.dp, Color(0xFF1565C0).copy(alpha = 0.4f)),
         ) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("Where to put plugin files", fontSize = 11.sp,
+                Text("插件文件放在哪里", fontSize = 11.sp,
                     color = Color(0xFF90CAF9), fontFamily = FontFamily.Monospace)
                 Text("LV2:  file.so or file.lv2", fontSize = 10.sp, color = StudioColors.TextMuted, fontFamily = FontFamily.Monospace)
                 Text("CLAP: file.clap or file.so", fontSize = 10.sp, color = StudioColors.TextMuted, fontFamily = FontFamily.Monospace)
                 Text("VST3: file.so", fontSize = 10.sp, color = StudioColors.TextMuted, fontFamily = FontFamily.Monospace)
                 Spacer(Modifier.height(4.dp))
-                Text("Default internal path (always scanned):", fontSize = 10.sp, color = StudioColors.TextMuted)
+                Text("默认内部路径（始终扫描）：", fontSize = 10.sp, color = StudioColors.TextMuted)
                 Text("Android/data/com.micplugin/files/plugins/{lv2,clap,vst3}",
                     fontSize = 9.sp, color = StudioColors.Accent, fontFamily = FontFamily.Monospace)
             }
@@ -78,7 +78,7 @@ fun PluginPathsScreen(navController: NavController, vm: AudioViewModel = hiltVie
 
             // Suggested quick-add paths
             PathSection(
-                title   = "LV2 Paths",
+                title   = "LV2 路径",
                 color   = Color(0xFF3DFCAC),
                 paths   = vm.allPluginPaths(context, PluginFormat.LV2).map { it.absolutePath },
                 userPaths = lv2Paths,
@@ -86,7 +86,7 @@ fun PluginPathsScreen(navController: NavController, vm: AudioViewModel = hiltVie
                 onRemove = { vm.removePluginPath(context, PluginFormat.LV2, it) },
             )
             PathSection(
-                title   = "CLAP Paths",
+                title   = "CLAP 路径",
                 color   = Color(0xFF7C5CFC),
                 paths   = vm.allPluginPaths(context, PluginFormat.CLAP).map { it.absolutePath },
                 userPaths = clapPaths,
@@ -94,7 +94,7 @@ fun PluginPathsScreen(navController: NavController, vm: AudioViewModel = hiltVie
                 onRemove = { vm.removePluginPath(context, PluginFormat.CLAP, it) },
             )
             PathSection(
-                title   = "VST3 Paths",
+                title   = "VST3 路径",
                 color   = Color(0xFFFFD700),
                 paths   = vm.allPluginPaths(context, PluginFormat.VST3).map { it.absolutePath },
                 userPaths = vst3Paths,
@@ -110,7 +110,7 @@ fun PluginPathsScreen(navController: NavController, vm: AudioViewModel = hiltVie
             ) {
                 Icon(Icons.Default.Refresh, null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(8.dp))
-                Text("Rescan All Plugin Paths")
+                Text("重新扫描全部插件路径")
             }
             Spacer(Modifier.height(8.dp))
         }
@@ -143,7 +143,7 @@ private fun PathSection(
             horizontalArrangement = Arrangement.SpaceBetween) {
             Text(title, fontSize = 11.sp, color = color, letterSpacing = 1.sp)
             IconButton(onClick = onAdd, modifier = Modifier.size(28.dp)) {
-                Icon(Icons.Default.Add, "Add path", tint = color, modifier = Modifier.size(18.dp))
+                Icon(Icons.Default.Add, "添加路径", tint = color, modifier = Modifier.size(18.dp))
             }
         }
         Surface(
@@ -170,7 +170,7 @@ private fun PathSection(
                         )
                         if (isUser) {
                             IconButton(onClick = { onRemove(path) }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, "Remove", tint = StudioColors.MeterRed,
+                                Icon(Icons.Default.Close, "移除", tint = StudioColors.MeterRed,
                                     modifier = Modifier.size(14.dp))
                             }
                         }
@@ -197,13 +197,13 @@ private fun AddPathDialog(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("Add ${format.displayName} Path", style = MaterialTheme.typography.titleSmall,
+                Text("添加 ${format.displayName} 路径", style = MaterialTheme.typography.titleSmall,
                     color = StudioColors.TextPrimary)
 
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
-                    label = { Text("Folder path", fontSize = 11.sp) },
+                    label = { Text("文件夹路径", fontSize = 11.sp) },
                     placeholder = { Text("/sdcard/MicUp/plugins/lv2", fontSize = 10.sp,
                         fontFamily = FontFamily.Monospace) },
                     singleLine = false,
@@ -220,7 +220,7 @@ private fun AddPathDialog(
                 )
 
                 // Quick-pick suggestions
-                Text("Quick pick:", fontSize = 10.sp, color = StudioColors.TextMuted)
+                Text("快速选择：", fontSize = 10.sp, color = StudioColors.TextMuted)
                 Column(Modifier.heightIn(max = 180.dp).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     suggestions.forEach { suggestion ->
@@ -241,13 +241,13 @@ private fun AddPathDialog(
                 }
 
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = onDismiss) { Text("Cancel", color = StudioColors.TextMuted) }
+                    TextButton(onClick = onDismiss) { Text("取消", color = StudioColors.TextMuted) }
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick  = { if (text.isNotBlank()) onAdd(text.trim()) },
                         enabled  = text.isNotBlank(),
                         colors   = ButtonDefaults.buttonColors(containerColor = StudioColors.Accent),
-                    ) { Text("Add & Rescan") }
+                    ) { Text("添加并扫描") }
                 }
             }
         }

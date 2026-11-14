@@ -15,30 +15,24 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.window.Dialog
-import androidx.datastore.core.DataStore
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.micplugin.CrashReporter
 import com.micplugin.service.ShizukuState
 import com.micplugin.service.VirtualMicTier
-import com.micplugin.ui.ThemeConfig.MaterialStyle
-import com.micplugin.ui.ThemeConfig.ThemeMode
 
 @Composable
-fun SettingsScreen(
-    navController: NavController,
-    vm: AudioViewModel = hiltViewModel(),
-    themeModeFlow: Flow<ThemeMode> = ThemeConfig.readThemeMode(vm.dataStore),
-    materialStyleFlow: Flow<MaterialStyle> = ThemeConfig.readMaterialStyle(vm.dataStore),
-) {
+fun SettingsScreen(navController: NavController, vm: AudioViewModel = hiltViewModel()) {
     val status      by vm.engineStatus.collectAsState()
     val tier        by vm.virtualMicTier.collectAsState()
     val shizukuState by vm.shizukuState.collectAsState()
     val context     = LocalContext.current
 
-    val themeMode by themeModeFlow.collectAsState(initial = ThemeMode.SYSTEM)
-    val materialStyle by materialStyleFlow.collectAsState(initial = MaterialStyle.GLASS)
+    // 主题与材质来自全局状态（ThemeState），修改后即时生效并持久化
+    val themeMode = ThemeState.themeMode
+    val materialStyle = ThemeState.materialStyle
 
     var crashReports by remember { mutableStateOf<List<java.io.File>>(emptyList()) }
     var viewingCrash by remember { mutableStateOf<java.io.File?>(null) }
@@ -55,9 +49,9 @@ fun SettingsScreen(
         Surface(color = StudioColors.Surface, modifier = Modifier.fillMaxWidth()) {
             Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, "Back", tint = StudioColors.TextPrimary)
+                    Icon(Icons.Default.ArrowBack, "返回", tint = StudioColors.TextPrimary)
                 }
-                Text("SETTINGS", style = MaterialTheme.typography.titleMedium,
+                Text("设置", style = MaterialTheme.typography.titleMedium,
                     color = StudioColors.TextPrimary, letterSpacing = 2.sp)
             }
         }
@@ -65,23 +59,23 @@ fun SettingsScreen(
         Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
             // ── Audio ─────────────────────────────────────────────────────────
-            SettingsSection("Audio") {
-                SettingsInfoRow("Sample Rate", "${status.sampleRate} Hz")
-                SettingsInfoRow("Frames/Burst", "${status.framesPerBurst}")
-                SettingsInfoRow("Latency (est.)", "~${status.latencyMs.toInt()} ms")
+            SettingsSection("音频") {
+                SettingsInfoRow("采样率", "${status.sampleRate} Hz")
+                SettingsInfoRow("每周期帧数", "${status.framesPerBurst}")
+                SettingsInfoRow("延迟（估算）", "~${status.latencyMs.toInt()} ms")
             }
 
             // ── Shizuku ───────────────────────────────────────────────────────
-            SettingsSection("Shizuku (ADB Access)") {
+            SettingsSection("Shizuku（ADB 权限）") {
                 val (stateColor, stateLabel) = when (shizukuState) {
-                    ShizukuState.READY       -> Color(0xFF3DFCAC) to "READY"
-                    ShizukuState.NEED_GRANT  -> Color(0xFFFFD700) to "NEED PERMISSION"
-                    ShizukuState.UNAVAILABLE -> Color(0xFFFF6B6B) to "NOT RUNNING"
+                    ShizukuState.READY       -> Color(0xFF3DFCAC) to "已就绪"
+                    ShizukuState.NEED_GRANT  -> Color(0xFFFFD700) to "需要授权"
+                    ShizukuState.UNAVAILABLE -> Color(0xFFFF6B6B) to "未运行"
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween) {
                     Column {
-                        Text("Status", fontSize = 12.sp, color = StudioColors.TextMuted)
+                        Text("状态", fontSize = 12.sp, color = StudioColors.TextMuted)
                         Text(stateLabel, fontSize = 11.sp, color = stateColor)
                     }
                     if (shizukuState == ShizukuState.NEED_GRANT) {
@@ -90,26 +84,26 @@ fun SettingsScreen(
                             colors  = ButtonDefaults.buttonColors(containerColor = Color(0xFF00B4D8)),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                         ) {
-                            Text("Grant", fontSize = 11.sp)
+                            Text("授权", fontSize = 11.sp)
                         }
                     }
                 }
                 if (shizukuState == ShizukuState.UNAVAILABLE) {
                     Text(
-                        "Install Shizuku from Play Store, start it via ADB or wireless debugging, then reopen this app.",
+                        "请先安装 Shizuku，并通过 ADB 或无线调试启动它，然后重新打开本应用。",
                         fontSize = 10.sp, color = StudioColors.TextMuted, lineHeight = 14.sp,
                     )
                 }
                 if (shizukuState == ShizukuState.READY) {
                     Text(
-                        "Shizuku active — ALSA loopback and appops routing available.",
+                        "Shizuku 已激活 — 可使用 ALSA 内录与 appops 路由。",
                         fontSize = 10.sp, color = StudioColors.TextMuted, lineHeight = 14.sp,
                     )
                 }
             }
 
             // ── Virtual Mic ───────────────────────────────────────────────────
-            SettingsSection("Virtual Microphone") {
+            SettingsSection("虚拟麦克风") {
                 Surface(
                     shape  = RoundedCornerShape(7.dp),
                     color  = Color(tier.badgeColorHex).copy(alpha = 0.05f),
@@ -117,7 +111,7 @@ fun SettingsScreen(
                 ) {
                     Column(Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("ACTIVE TIER", fontSize = 8.sp, color = StudioColors.TextMuted, letterSpacing = 1.sp)
+                            Text("当前档位", fontSize = 8.sp, color = StudioColors.TextMuted, letterSpacing = 1.sp)
                             Spacer(Modifier.width(8.dp))
                             Surface(
                                 shape  = RoundedCornerShape(4.dp),
@@ -152,12 +146,12 @@ fun SettingsScreen(
             }
 
 
-            SettingsSection("Monitor Output Device") {
+            SettingsSection("监听输出设备") {
                 val devices    by vm.outputDevices.collectAsState()
                 val selectedId by vm.selectedOutputDeviceId.collectAsState()
                 LaunchedEffect(Unit) { vm.loadOutputDevices(context) }
                 if (devices.isEmpty()) {
-                    Text("No devices found", fontSize = 12.sp, color = StudioColors.TextMuted)
+                    Text("未找到设备", fontSize = 12.sp, color = StudioColors.TextMuted)
                 } else {
                     devices.forEach { device ->
                         val isSelected = device.id == selectedId
@@ -174,7 +168,7 @@ fun SettingsScreen(
                                 Text(device.name, fontSize = 12.sp,
                                     color = if (isSelected) StudioColors.Accent else StudioColors.TextPrimary)
                                 if (device.id == -1)
-                                    Text("Prefers headset then earpiece, never speaker",
+                                    Text("优先耳机，其次听筒，绝不外放",
                                         fontSize = 9.sp, color = StudioColors.TextMuted)
                             }
                         }
@@ -182,12 +176,12 @@ fun SettingsScreen(
                 }
             }
 
-            SettingsSection("Input Device") {
+            SettingsSection("输入设备") {
                 val devices    by vm.inputDevices.collectAsState()
                 val selectedId by vm.selectedInputDeviceId.collectAsState()
                 LaunchedEffect(Unit) { vm.loadInputDevices(context) }
                 if (devices.isEmpty()) {
-                    Text("No devices found", fontSize = 12.sp, color = StudioColors.TextMuted)
+                    Text("未找到设备", fontSize = 12.sp, color = StudioColors.TextMuted)
                 } else {
                     devices.forEach { device ->
                         val isSelected = device.id == selectedId
@@ -204,7 +198,7 @@ fun SettingsScreen(
                                 Text(device.name, fontSize = 12.sp,
                                     color = if (isSelected) StudioColors.Accent else StudioColors.TextPrimary)
                                 if (device.id == -1)
-                                    Text("Uses whatever the OS considers the default mic",
+                                    Text("跟随系统认定的默认麦克风",
                                         fontSize = 9.sp, color = StudioColors.TextMuted)
                             }
                         }
@@ -228,28 +222,25 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         ThemeModeOption(
-                            themeMode = ThemeMode.SYSTEM,
                             isSelected = themeMode == ThemeMode.SYSTEM,
-                            icon = Icons.Default.Settings,
+                            icon = Icons.Default.BrightnessAuto,
                             label = "跟随系统",
-                            description = "自动跟随系统设置",
-                            onClick = { ThemeConfig.saveThemeMode(vm.dataStore, ThemeMode.SYSTEM) }
+                            description = "自动跟随系统深浅色设置",
+                            onClick = { ThemeState.saveThemeMode(context, ThemeMode.SYSTEM) }
                         )
                         ThemeModeOption(
-                            themeMode = ThemeMode.LIGHT,
                             isSelected = themeMode == ThemeMode.LIGHT,
                             icon = Icons.Default.LightMode,
                             label = "浅色模式",
-                            description = "柔和粉/紫调主色",
-                            onClick = { ThemeConfig.saveThemeMode(vm.dataStore, ThemeMode.LIGHT) }
+                            description = "低饱和柔和粉/紫调主色",
+                            onClick = { ThemeState.saveThemeMode(context, ThemeMode.LIGHT) }
                         )
                         ThemeModeOption(
-                            themeMode = ThemeMode.DARK,
                             isSelected = themeMode == ThemeMode.DARK,
                             icon = Icons.Default.DarkMode,
                             label = "深色模式",
                             description = "深蓝/灰调配合紫色点缀",
-                            onClick = { ThemeConfig.saveThemeMode(vm.dataStore, ThemeMode.DARK) }
+                            onClick = { ThemeState.saveThemeMode(context, ThemeMode.DARK) }
                         )
                     }
                 }
@@ -262,20 +253,18 @@ fun SettingsScreen(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         MaterialStyleOption(
-                            materialStyle = MaterialStyle.GLASS,
                             isSelected = materialStyle == MaterialStyle.GLASS,
-                            icon = Icons.Default.BubbleChart,
+                            icon = Icons.Default.BlurOn,
                             label = "液态玻璃",
-                            description = "高斯模糊 + 半透明磨砂",
-                            onClick = { ThemeConfig.saveMaterialStyle(vm.dataStore, MaterialStyle.GLASS) }
+                            description = "半透明磨砂 + 氛围光，质感最佳",
+                            onClick = { ThemeState.saveMaterialStyle(context, MaterialStyle.GLASS) }
                         )
                         MaterialStyleOption(
-                            materialStyle = MaterialStyle.STANDARD,
                             isSelected = materialStyle == MaterialStyle.STANDARD,
-                            icon = Icons.Default.Rectangle,
+                            icon = Icons.Default.Layers,
                             label = "标准 Material",
                             description = "不透明材质，性能最佳",
-                            onClick = { ThemeConfig.saveMaterialStyle(vm.dataStore, MaterialStyle.STANDARD) }
+                            onClick = { ThemeState.saveMaterialStyle(context, MaterialStyle.STANDARD) }
                         )
                     }
                 }
@@ -289,9 +278,9 @@ fun SettingsScreen(
             }
 
             // ── Crash Reports ─────────────────────────────────────────────────
-            SettingsSection("Crash Reports") {
+            SettingsSection("崩溃日志") {
                 if (crashReports.isEmpty()) {
-                    Text("No crashes recorded.", fontSize = 12.sp, color = StudioColors.TextMuted)
+                    Text("暂无崩溃记录。", fontSize = 12.sp, color = StudioColors.TextMuted)
                 } else {
                     crashReports.forEach { file ->
                         Row(Modifier.fillMaxWidth().clickable { viewingCrash = file },
@@ -302,7 +291,7 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(Modifier.height(4.dp))
-                    SettingsActionRow("Clear All Crash Reports", Icons.Default.DeleteForever) {
+                    SettingsActionRow("清除全部崩溃日志", Icons.Default.DeleteForever) {
                         CrashReporter.clearAll(context); crashReports = emptyList()
                     }
                 }
@@ -316,7 +305,7 @@ fun SettingsScreen(
                 modifier = Modifier.fillMaxWidth().heightIn(max = 500.dp)) {
                 Column(Modifier.padding(16.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                        Text("Crash Report", style = MaterialTheme.typography.titleSmall, color = StudioColors.MeterRed)
+                        Text("崩溃报告", style = MaterialTheme.typography.titleSmall, color = StudioColors.MeterRed)
                         IconButton(onClick = { viewingCrash = null }, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Default.Close, null, tint = StudioColors.TextMuted)
                         }
@@ -328,7 +317,7 @@ fun SettingsScreen(
                     }
                     Spacer(Modifier.height(8.dp))
                     TextButton(onClick = { file.delete(); crashReports = CrashReporter.getCrashReports(context); viewingCrash = null },
-                        modifier = Modifier.align(Alignment.End)) { Text("Delete", color = StudioColors.MeterRed) }
+                        modifier = Modifier.align(Alignment.End)) { Text("删除", color = StudioColors.MeterRed) }
                 }
             }
         }
@@ -339,8 +328,21 @@ fun SettingsScreen(
 private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionLabel(title)
-        Surface(shape = RoundedCornerShape(8.dp), color = StudioColors.Card,
-            border = BorderStroke(0.5.dp, StudioColors.Border), modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            shape = RoundedCornerShape(8.dp),
+            color = StudioColors.Card,
+            border = BorderStroke(0.5.dp, StudioColors.Border),
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    // 玻璃材质下给卡片加轻微阴影，增强悬浮感
+                    if (StudioColors.glassEnabled) Modifier.shadow(
+                        8.dp, RoundedCornerShape(8.dp),
+                        ambientColor = StudioColors.Accent.copy(alpha = 0.30f),
+                        spotColor = StudioColors.Accent.copy(alpha = 0.30f),
+                    ) else Modifier
+                ),
+        ) {
             Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) { content() }
         }
     }
@@ -418,7 +420,6 @@ private fun TierRow(
 
 @Composable
 private fun ThemeModeOption(
-    themeMode: ThemeMode,
     isSelected: Boolean,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
@@ -454,7 +455,6 @@ private fun ThemeModeOption(
 
 @Composable
 private fun MaterialStyleOption(
-    materialStyle: MaterialStyle,
     isSelected: Boolean,
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,

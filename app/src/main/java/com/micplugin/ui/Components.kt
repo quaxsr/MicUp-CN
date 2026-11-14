@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
@@ -137,7 +138,16 @@ fun EffectCard(
 ) {
     var expanded by remember { mutableStateOf(true) }
     Surface(
-        modifier  = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                // 玻璃材质下加轻微阴影，增强悬浮感
+                if (StudioColors.glassEnabled) Modifier.shadow(
+                    10.dp, RoundedCornerShape(8.dp),
+                    ambientColor = StudioColors.Accent.copy(alpha = 0.30f),
+                    spotColor = StudioColors.Accent.copy(alpha = 0.30f),
+                ) else Modifier
+            ),
         shape     = RoundedCornerShape(8.dp),
         color     = StudioColors.Card,
         border    = BorderStroke(1.dp, if (enabled) StudioColors.AccentDim else StudioColors.Border),
@@ -386,7 +396,15 @@ fun MeteringStrip(
     modifier: Modifier = Modifier,
 ) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .then(
+                if (StudioColors.glassEnabled) Modifier.shadow(
+                    8.dp, RoundedCornerShape(8.dp),
+                    ambientColor = StudioColors.Accent.copy(alpha = 0.30f),
+                    spotColor = StudioColors.Accent.copy(alpha = 0.30f),
+                ) else Modifier
+            ),
         shape    = RoundedCornerShape(8.dp),
         color    = StudioColors.Card,
         border   = BorderStroke(1.dp, StudioColors.Border),
@@ -397,17 +415,17 @@ fun MeteringStrip(
         ) {
             // IN meters (left)
             repeat(2) {
-                VuMeterBar(inputDb, if (it == 0) "IN L" else "IN R",
+                VuMeterBar(inputDb, if (it == 0) "左输入" else "右输入",
                     modifier = Modifier.weight(1f).fillMaxHeight())
             }
             // GR meter
             VerticalDivider(color = StudioColors.Border)
-            VuMeterBar(grDb, "GR", modifier = Modifier.weight(1f).fillMaxHeight(),
+            VuMeterBar(grDb, "衰减", modifier = Modifier.weight(1f).fillMaxHeight(),
                 isGainReduction = true)
             VerticalDivider(color = StudioColors.Border)
             // OUT meters (right)
             repeat(2) {
-                VuMeterBar(outputDb, if (it == 0) "OUT L" else "OUT R",
+                VuMeterBar(outputDb, if (it == 0) "左输出" else "右输出",
                     modifier = Modifier.weight(1f).fillMaxHeight())
             }
         }

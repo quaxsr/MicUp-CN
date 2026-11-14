@@ -19,16 +19,16 @@ enum class VirtualMicTier {
     VOIP_STREAM, MEDIA_PROJECTION, SHIZUKU_ADB, ROOT_MAGISK;
 
     val displayName: String get() = when (this) {
-        VOIP_STREAM      -> "VoIP Compatible"
-        MEDIA_PROJECTION -> "Software Loopback"
-        SHIZUKU_ADB      -> "Shizuku — ADB Level"
-        ROOT_MAGISK      -> "Root Mode — System-Wide"
+        VOIP_STREAM      -> "VoIP 兼容"
+        MEDIA_PROJECTION -> "软件内录"
+        SHIZUKU_ADB      -> "Shizuku — ADB 级"
+        ROOT_MAGISK      -> "Root 模式 — 全系统"
     }
     val description: String get() = when (this) {
-        VOIP_STREAM      -> "Processed audio routes through VoIP stream. Works with Meet, Teams, Discord, Zoom."
-        MEDIA_PROJECTION -> "Uses system-wide VOICE_COMMUNICATION injection. Works on Android 14+ to override default mic in most apps."
-        SHIZUKU_ADB      -> "Uses Shizuku (ADB-level) to load ALSA loopback and route processed audio. Apps see 'MicPlugin Virtual Mic' without full root."
-        ROOT_MAGISK      -> "Magisk module creates /dev/snd/virtual_mic via ALSA loopback. All apps see MicPlugin as a separate hardware device."
+        VOIP_STREAM      -> "处理后的音频经 VoIP 音频流路由，兼容 Meet、Teams、Discord、Zoom。"
+        MEDIA_PROJECTION -> "使用系统级 VOICE_COMMUNICATION 注入，Android 14+ 可在多数应用中覆盖默认麦克风。"
+        SHIZUKU_ADB      -> "通过 Shizuku（ADB 权限）加载 ALSA 内录并路由处理后的音频，应用将看到「麦克风插件虚拟麦克风」，无需完整 Root。"
+        ROOT_MAGISK      -> "Magisk 模块通过 ALSA 内录创建 /dev/snd/virtual_mic，所有应用都会把本插件视为独立硬件设备。"
     }
     val badgeColorHex: Long get() = when (this) {
         VOIP_STREAM      -> 0xFF3DFCACL
@@ -199,16 +199,16 @@ class VirtualMicService @Inject constructor(
     fun checkTierAvailability(tier: VirtualMicTier): String? = when (tier) {
         VirtualMicTier.VOIP_STREAM      -> null
         VirtualMicTier.MEDIA_PROJECTION -> if (Build.VERSION.SDK_INT >= 29) null
-                                           else "Requires Android 10+"
+                                           else "需要 Android 10 以上"
         VirtualMicTier.SHIZUKU_ADB      -> when (shizukuManager.state.value) {
             ShizukuState.READY       -> if (shizukuManager.hasAlsaLoopbackSupport()) null
-                                         else "Shizuku is ready, but this device's kernel has no ALSA loopback (snd-aloop) support — use Software Loopback instead"
-            ShizukuState.NEED_GRANT  -> "Shizuku is running but permission hasn't been granted — tap Grant in Settings"
-            ShizukuState.UNAVAILABLE -> "Shizuku is not running — start it via Wireless Debugging or ADB"
+                                         else "Shizuku 已就绪，但此设备内核不支持 ALSA 内录（snd-aloop）— 请改用「软件内录」"
+            ShizukuState.NEED_GRANT  -> "Shizuku 正在运行但尚未授权 — 请到设置页点击「授权」"
+            ShizukuState.UNAVAILABLE -> "Shizuku 未运行 — 请通过无线调试或 ADB 启动它"
         }
         VirtualMicTier.ROOT_MAGISK      -> when {
-            !isRooted()                        -> "Device is not rooted"
-            !hasAlsaLoopbackSupportRoot()       -> "Rooted, but no ALSA loopback device found — install the module and reboot, or this chipset's kernel may not support snd-aloop at all"
+            !isRooted()                        -> "设备未 Root"
+            !hasAlsaLoopbackSupportRoot()       -> "已 Root，但未找到 ALSA 内录设备 — 请安装模块并重启，或此芯片内核可能完全不支持 snd-aloop"
             else                                -> null
         }
     }

@@ -76,7 +76,7 @@ class AudioProcessingService : Service() {
 
         val latencyStr = if (latencyMs > 0f) " · ${latencyMs.toInt()}ms" else ""
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("MicUp Active")
+            .setContentTitle("麦克风插件运行中")
             .setContentText("$text$latencyStr")
             .setSmallIcon(android.R.drawable.ic_btn_speak_now)
             .setContentIntent(mainIntent)
@@ -86,16 +86,16 @@ class AudioProcessingService : Service() {
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .addAction(android.R.drawable.ic_media_pause, "Stop", stopIntent)
+            .addAction(android.R.drawable.ic_media_pause, "停止", stopIntent)
             .build()
     }
 
     private fun createNotificationChannel() {
         val ch = NotificationChannel(
-            CHANNEL_ID, "MicUp Audio",
+            CHANNEL_ID, "麦克风插件音频",
             NotificationManager.IMPORTANCE_LOW
         ).apply {
-            description = "Real-time audio processing service"
+            description = "实时音频处理前台服务"
             setShowBadge(false)
         }
         getSystemService(NotificationManager::class.java).createNotificationChannel(ch)

@@ -11,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -58,7 +59,7 @@ fun MainScreen(navController: NavController, vm: AudioViewModel = hiltViewModel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                "MIC PLUGIN",
+                "麦克风插件",
                 style = MaterialTheme.typography.titleLarge,
                 color = StudioColors.TextPrimary,
                 fontWeight = FontWeight.Black,
@@ -80,14 +81,14 @@ fun MainScreen(navController: NavController, vm: AudioViewModel = hiltViewModel(
                     ),
             ) {
                 Icon(
-                    Icons.Default.PowerSettingsNew, "Power",
+                    Icons.Default.PowerSettingsNew, "电源",
                     tint = if (status.isRunning) Color.White else StudioColors.TextMuted,
                 )
             }
             Spacer(Modifier.width(6.dp))
             // Settings
             IconButton(onClick = { navController.navigate("settings") }) {
-                Icon(Icons.Default.Settings, "Settings", tint = StudioColors.TextMuted)
+                Icon(Icons.Default.Settings, "设置", tint = StudioColors.TextMuted)
             }
         }
 
@@ -111,7 +112,7 @@ fun MainScreen(navController: NavController, vm: AudioViewModel = hiltViewModel(
                 FilterChip(
                     selected = false,
                     onClick  = { showSaveDialog = true },
-                    label    = { Text("+ Save", fontSize = 10.sp) },
+                    label    = { Text("+ 保存", fontSize = 10.sp) },
                     colors   = FilterChipDefaults.filterChipColors(
                         containerColor = StudioColors.Card,
                         labelColor     = StudioColors.Accent,
@@ -134,9 +135,9 @@ fun MainScreen(navController: NavController, vm: AudioViewModel = hiltViewModel(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 StatusPill("${status.sampleRate / 1000}kHz")
-                StatusPill("${status.framesPerBurst}fr")
+                StatusPill("${status.framesPerBurst}帧")
                 StatusPill("~${status.latencyMs.toInt()}ms")
-                StatusPill("${pluginSlots.size} plugins")
+                StatusPill("${pluginSlots.size} 个插件")
             }
         }
 
@@ -155,7 +156,7 @@ fun MainScreen(navController: NavController, vm: AudioViewModel = hiltViewModel(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("MASTER BYPASS", style = MaterialTheme.typography.labelSmall,
+                Text("全局旁通", style = MaterialTheme.typography.labelSmall,
                     color = if (bypass) StudioColors.MeterAmber else StudioColors.TextMuted,
                     letterSpacing = 1.sp)
                 Switch(checked = bypass, onCheckedChange = { vm.setMasterBypass(it) },
@@ -178,13 +179,13 @@ fun MainScreen(navController: NavController, vm: AudioViewModel = hiltViewModel(
             ) {
                 Column {
                     Text(
-                        "Monitor Output",
+                        "监听输出",
                         style = MaterialTheme.typography.labelSmall,
                         color = StudioColors.TextPrimary,
                         letterSpacing = 1.sp,
                     )
                     Text(
-                        if (monitoring) "Hearing yourself" else "Silent to you — still routed",
+                        if (monitoring) "听到自己的声音" else "静音，但仍在路由",
                         fontSize = 10.sp,
                         color = StudioColors.TextMuted,
                     )
@@ -262,7 +263,7 @@ fun MainScreen(navController: NavController, vm: AudioViewModel = hiltViewModel(
                 }
                 // GR readout
                 val gr = levels.gainReductionDb
-                Text("GR: ${if (gr > 0.1f) "-%.1f dB".format(gr) else "0.0 dB"}",
+                Text("衰减: ${if (gr > 0.1f) "-%.1f dB".format(gr) else "0.0 dB"}",
                     fontSize = 9.sp, color = StudioColors.GainReduction)
             }
         }
@@ -380,7 +381,15 @@ private fun PluginSlotCard(
     onEdit: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (StudioColors.glassEnabled) Modifier.shadow(
+                    8.dp, RoundedCornerShape(7.dp),
+                    ambientColor = StudioColors.Accent.copy(alpha = 0.30f),
+                    spotColor = StudioColors.Accent.copy(alpha = 0.30f),
+                ) else Modifier
+            ),
         shape    = RoundedCornerShape(7.dp),
         color    = StudioColors.Card,
         border   = BorderStroke(
@@ -411,11 +420,11 @@ private fun PluginSlotCard(
                 modifier = Modifier.height(20.dp),
             )
             IconButton(onClick = onEdit, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Default.Tune, "Edit", tint = StudioColors.TextMuted,
+                Icon(Icons.Default.Tune, "编辑", tint = StudioColors.TextMuted,
                     modifier = Modifier.size(18.dp))
             }
             IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-                Icon(Icons.Default.Close, "Remove", tint = StudioColors.MeterRed,
+                Icon(Icons.Default.Close, "移除", tint = StudioColors.MeterRed,
                     modifier = Modifier.size(18.dp))
             }
         }

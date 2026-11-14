@@ -1,80 +1,66 @@
 package com.micplugin.ui
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import android.content.Context
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+
+/** 主题模式：跟随系统 / 浅色 / 深色 */
+enum class ThemeMode(val value: Int) {
+    SYSTEM(0),
+    LIGHT(1),
+    DARK(2);
+
+    companion object {
+        fun fromValue(value: Int): ThemeMode =
+            values().firstOrNull { it.value == value } ?: SYSTEM
+    }
+}
+
+/** 界面材质：液态玻璃 / 标准 Material */
+enum class MaterialStyle(val value: Int) {
+    GLASS(0),
+    STANDARD(1);
+
+    companion object {
+        fun fromValue(value: Int): MaterialStyle =
+            values().firstOrNull { it.value == value } ?: STANDARD
+    }
+}
 
 /**
- * 主题与材质配置存储
+ * 主题与材质的全局状态 + 持久化。
+ *
+ * 持久化使用 SharedPreferences（与工程现有 "micup_prefs" 保持一致，无需新增依赖）。
+ * themeMode / materialStyle 是 Compose State：设置页修改后，所有读取处即时重组，
+ * 下次启动由 MainActivity 在 setContent 前调用 [load] 恢复上次选择。
  */
-object ThemeConfig {
-    private const val PREF_THEME_MODE = "pref_theme_mode"
-    private const val PREF_MATERIAL_STYLE = "pref_material_style"
+object ThemeState {
+    var themeMode by mutableStateOf(ThemeMode.SYSTEM)
+        private set
+    var materialStyle by mutableStateOf(MaterialStyle.GLASS)
+        private set
 
-    // 主题模式枚举
-    enum class ThemeMode(val value: Int) {
-        SYSTEM(0),    // 跟随系统
-        LIGHT(1),     // 浅色模式
-        DARK(2);      // 深色模式
+    private const val PREFS = "micup_prefs"
+    private const val KEY_THEME = "theme_mode"
+    private const val KEY_MATERIAL = "material_style"
 
-        companion object {
-            fun fromValue(value: Int): ThemeMode {
-                return entries.find { it.value == value } ?: DARK
-            }
-        }
+    /** App 启动时调用一次（MainActivity.onCreate），同步读取，文件极小无卡顿。 */
+    fun load(context: Context) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        themeMode = ThemeMode.fromValue(prefs.getInt(KEY_THEME, ThemeMode.SYSTEM.value))
+        materialStyle = MaterialStyle.fromValue(prefs.getInt(KEY_MATERIAL, MaterialStyle.GLASS.value))
     }
 
-    // 界面材质枚举
-    enum class MaterialStyle(val value: Int) {
-        GLASS(0),     // 液态玻璃
-        STANDARD(1);  // 标准 Material
-
-        companion object {
-            fun fromValue(value: Int): MaterialStyle {
-                return entries.find { it.value == value } ?: STANDARD
-            }
-        }
+    fun saveThemeMode(context: Context, mode: ThemeMode) {
+        themeMode = mode
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_THEME, mode.value).apply()
     }
 
-    private val themeModeKey = intPreferencesKey(PREF_THEME_MODE)
-    private val materialStyleKey = intPreferencesKey(PREF_MATERIAL_STYLE)
-
-    /**
-     * 保存主题模式
-     */
-    suspend fun saveThemeMode(dataStore: DataStore<Preferences>, mode: ThemeMode) {
-        dataStore.edit { preferences ->
-            preferences[themeModeKey] = mode.value
-        }
-    }
-
-    /**
-     * 读取主题模式
-     */
-    fun readThemeMode(dataStore: DataStore<Preferences>): Flow<ThemeMode> {
-        return dataStore.data.map { preferences ->
-            ThemeMode.fromValue(preferences[themeModeKey] ?: ThemeMode.SYSTEM.value)
-        }
-    }
-
-    /**
-     * 保存界面材质
-     */
-    suspend fun saveMaterialStyle(dataStore: DataStore<Preferences>, style: MaterialStyle) {
-        dataStore.edit { preferences ->
-            preferences[materialStyleKey] = style.value
-        }
-    }
-
-    /**
-     * 读取界面材质
-     */
-    fun readMaterialStyle(dataStore: DataStore<Preferences>): Flow<MaterialStyle> {
-        return dataStore.data.map { preferences ->
-            MaterialStyle.fromValue(preferences[materialStyleKey] ?: MaterialStyle.GLASS.value)
-        }
+    fun saveMaterialStyle(context: Context, style: MaterialStyle) {
+        materialStyle = style
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            .edit().putInt(KEY_MATERIAL, style.value).apply()
     }
 }

@@ -49,7 +49,7 @@ fun PluginEditorScreen(
                     val o = el.jsonObject
                     PluginParam(
                         id      = o["id"]?.jsonPrimitive?.int ?: 0,
-                        name    = o["name"]?.jsonPrimitive?.content ?: "Param",
+                        name    = o["name"]?.jsonPrimitive?.content ?: "参数",
                         min     = o["min"]?.jsonPrimitive?.float ?: 0f,
                         max     = o["max"]?.jsonPrimitive?.float ?: 1f,
                         default = o["default"]?.jsonPrimitive?.float ?: 0f,
@@ -71,7 +71,7 @@ fun PluginEditorScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = { navController.popBackStack() }) {
-                    Icon(Icons.Default.ArrowBack, "Back", tint = StudioColors.TextPrimary)
+                    Icon(Icons.Default.ArrowBack, "返回", tint = StudioColors.TextPrimary)
                 }
                 Column(Modifier.weight(1f)) {
                     Text(slot.descriptor.name,
@@ -105,7 +105,7 @@ fun PluginEditorScreen(
                 shape    = RoundedCornerShape(6.dp),
                 border   = BorderStroke(0.5.dp, StudioColors.MeterAmber),
             ) {
-                Text("⚠ VST3 Experimental — parameter control may be limited.",
+                Text("⚠ VST3 实验性支持 — 参数控制可能受限。",
                     fontSize = 10.sp, color = StudioColors.MeterAmber,
                     modifier = Modifier.padding(10.dp))
             }
@@ -120,9 +120,9 @@ fun PluginEditorScreen(
                     Spacer(Modifier.height(12.dp))
                     Text(
                     when (slot.descriptor.format.name) {
-                        "VST3" -> "VST3 parameter control not yet supported."
-                        "LV2"  -> "LV2 parameters require .ttl manifest — generic controls shown if available."
-                        else   -> "No parameters exposed by this plugin."
+                        "VST3" -> "暂不支持 VST3 参数控制。"
+                        "LV2"  -> "LV2 参数需要 .ttl 清单 — 若可用则显示通用控件。"
+                        else   -> "该插件未暴露任何参数。"
                     },
                         color = StudioColors.TextMuted)
                 }

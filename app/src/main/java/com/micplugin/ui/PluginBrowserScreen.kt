@@ -28,7 +28,7 @@ fun PluginBrowserScreen(
     val discovered  by vm.discovered.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabs = listOf("INSTALLED", "APK PLUGINS")
+    val tabs = listOf("已安装", "APK 插件")
 
     val nativePlugins = discovered.filter { it.format != PluginFormat.APK }
     val apkPlugins    = discovered.filter { it.format == PluginFormat.APK }
@@ -57,17 +57,17 @@ fun PluginBrowserScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = { navController.popBackStack() }) {
-                Icon(Icons.Default.ArrowBack, "Back", tint = StudioColors.TextPrimary)
+                Icon(Icons.Default.ArrowBack, "返回", tint = StudioColors.TextPrimary)
             }
             Text(
-                "PLUGIN BROWSER",
+                "插件浏览器",
                 style = MaterialTheme.typography.titleMedium,
                 color = StudioColors.TextPrimary,
                 letterSpacing = 2.sp,
                 modifier = Modifier.weight(1f),
             )
             IconButton(onClick = { vm.rescan() }) {
-                Icon(Icons.Default.Refresh, "Rescan", tint = StudioColors.Accent)
+                Icon(Icons.Default.Refresh, "重新扫描", tint = StudioColors.Accent)
             }
         }
 
@@ -75,7 +75,7 @@ fun PluginBrowserScreen(
         OutlinedTextField(
             value         = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder   = { Text("Search plugins…", color = StudioColors.TextMuted) },
+            placeholder   = { Text("搜索插件…", color = StudioColors.TextMuted) },
             leadingIcon   = { Icon(Icons.Default.Search, null, tint = StudioColors.TextMuted) },
             singleLine    = true,
             colors        = OutlinedTextFieldDefaults.colors(
@@ -124,11 +124,11 @@ fun PluginBrowserScreen(
                     Icon(Icons.Default.Extension, null,
                         tint = StudioColors.TextMuted, modifier = Modifier.size(48.dp))
                     Spacer(Modifier.height(12.dp))
-                    Text("No plugins found", color = StudioColors.TextMuted)
+                    Text("未找到插件", color = StudioColors.TextMuted)
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Place .clap / .so / .lv2 files in:\n" +
-                        "Files > Android > data > com.micplugin > files > plugins",
+                        "请将 .clap / .so / .lv2 文件放到：\n" +
+                        "文件 > Android > data > com.micplugin > files > plugins",
                         color = StudioColors.TextMuted, fontSize = 11.sp,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                     )
@@ -189,7 +189,7 @@ private fun PluginBrowserCard(
                         verticalAlignment = Alignment.CenterVertically) {
                         PluginFormatBadge(descriptor.format)
                         if (descriptor.params.isNotEmpty()) {
-                            Text("${descriptor.params.size} params",
+                            Text("${descriptor.params.size} 个参数",
                                 fontSize = 8.sp, color = StudioColors.TextMuted)
                         }
                     }
@@ -201,7 +201,7 @@ private fun PluginBrowserCard(
                 ) {
                     Icon(Icons.Default.Add, null, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Add", fontSize = 11.sp)
+                    Text("添加", fontSize = 11.sp)
                 }
             }
             if (expanded) {
@@ -213,7 +213,7 @@ private fun PluginBrowserCard(
                     Text(descriptor.description, fontSize = 10.sp, color = StudioColors.TextMuted)
                 }
                 if (descriptor.format == PluginFormat.VST3) {
-                    Text("⚠ VST3 support is experimental. Use LV2/CLAP for reliability.",
+                    Text("⚠ VST3 支持仍属实验性，追求稳定请使用 LV2 / CLAP。",
                         fontSize = 10.sp, color = StudioColors.MeterAmber)
                 }
             }
