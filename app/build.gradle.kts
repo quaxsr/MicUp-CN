@@ -30,6 +30,8 @@ android {
             cmake {
                 cppFlags += listOf("-std=c++17", "-O3", "-ffast-math", "-DANDROID")
                 arguments += listOf(
+                    // 强制原生层带优化编译：Debug 变体也不跑 -O0，防止实时音频爆音卡顿
+                    "-DCMAKE_BUILD_TYPE=RelWithDebInfo",
                     "-DANDROID_STL=c++_shared",
                     "-DANDROID_ARM_NEON=TRUE",
                     "-DFETCHCONTENT_QUIET=OFF"
@@ -44,8 +46,13 @@ android {
 
     buildTypes {
         debug {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             isDebuggable = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         release {
             isMinifyEnabled = false
